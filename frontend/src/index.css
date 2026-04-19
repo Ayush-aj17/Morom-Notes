@@ -1,0 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: #FDFCF8;
+    color: #292524;
+    /* stone-800 */
+    @apply font-sans antialiased;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Improve mobile touch targets */
+  button, input[type="button"], input[type="submit"], a {
+    min-height: 44px;
+  }
+
+  /* Fix viewport scaling on mobile */
+  @media (max-width: 640px) {
+    body {
+      font-size: 16px; /* Prevents zoom on input focus on iOS */
+    }
+  }
+}
+
+@layer utilities {
+  .pattern-dots {
+    background-image: radial-gradient(circle at center, currentColor 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
+  }
+}
+
+/* Global styles to constrain markdown tables within the container and prevent overflow */
+.prose table {
+  width: 95% !important;
+  max-width: 95% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  table-layout: fixed !important;
+}
+
+.prose th,
+.prose td {
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  white-space: normal !important;
+}
+
+.prose code {
+  word-break: break-all !important;
+  white-space: pre-wrap !important;
+}
+
+@media print {
+  @page {
+    margin: 0;
+    size: A4;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: white !important;
+  }
+
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .a4-page {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    page-break-after: always;
+    break-after: page;
+    /* Ensure content fits perfectly on A4 print */
+    height: 297mm !important;
+    width: 210mm !important;
+    overflow: hidden;
+  }
+
+  /* Hide the final page break for the last element to avoid a blank trailing page */
+  .a4-page:last-child {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+}

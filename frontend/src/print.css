@@ -1,0 +1,161 @@
+/* ========================================
+   PRINT AND PDF EXPORT STYLES
+   ======================================== */
+
+@media print {
+  @page {
+    margin: 0;
+    size: A4;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: white !important;
+  }
+
+  /* Hide UI elements */
+  header,
+  nav,
+  button,
+  input,
+  textarea,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Content optimizations */
+  .prose {
+    max-width: 100%;
+  }
+
+  /* Heading styles */
+  .prose h1,
+  .prose h2,
+  .prose h3,
+  .prose h4,
+  .prose h5,
+  .prose h6 {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Paragraph styles */
+  .prose p {
+    page-break-inside: avoid;
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* List styles */
+  .prose ul,
+  .prose ol {
+    page-break-inside: avoid;
+  }
+
+  .prose li {
+    page-break-inside: avoid;
+  }
+
+  /* Code styles */
+  .prose code {
+    background-color: #f5f5f5;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .prose pre {
+    background-color: #f5f5f5;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Table styles */
+  .prose table {
+    page-break-inside: avoid;
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+  }
+
+  .prose th,
+  .prose td {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    font-size: 0.85em;
+  }
+
+  /* Blockquote styles */
+  .prose blockquote {
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Link styles */
+  a {
+    color: #0066cc;
+    text-decoration: underline;
+  }
+
+  /* Image handling */
+  img {
+    max-width: 100%;
+    page-break-inside: avoid;
+  }
+}
+
+/* ========================================
+   SCREEN STYLES (HTML2CANVAS EXPORT)
+   ======================================== */
+
+.export-container {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  background: white;
+}
+
+.prose {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Ensure colors are preserved in export */
+.prose strong {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.prose em {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.prose code {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.prose blockquote {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Prevent overflow in export */
+.prose pre {
+  overflow: auto !important;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.prose p,
+.prose li,
+.prose td {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
