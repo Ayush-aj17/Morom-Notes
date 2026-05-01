@@ -453,6 +453,21 @@ export default function UploadPage() {
                                     <p className="text-xs text-stone-600 mb-3">Choose how you want your notes generated:</p>
                                     
                                     <div className="space-y-2">
+                                        <label className="flex items-start gap-3 p-3 bg-white rounded-lg border-2 border-transparent hover:border-blue-300 cursor-pointer transition-colors" style={{borderColor: pipeline === 'transcript-only' ? '#3b82f6' : 'transparent'}}>
+                                            <input
+                                                type="radio"
+                                                name="pipeline"
+                                                value="transcript-only"
+                                                checked={pipeline === 'transcript-only'}
+                                                onChange={(e) => setPipeline(e.target.value)}
+                                                className="mt-1 w-4 h-4 cursor-pointer"
+                                            />
+                                            <div className="flex-1">
+                                                <p className="text-xs sm:text-sm font-medium text-stone-800">⚡ Transcript Only (Ultra Fast)</p>
+                                                <p className="text-xs text-stone-600">Fetches existing YouTube captions. No video processing needed.</p>
+                                            </div>
+                                        </label>
+
                                         <label className="flex items-start gap-3 p-3 bg-white rounded-lg border-2 border-transparent hover:border-blue-300 cursor-pointer transition-colors" style={{borderColor: pipeline === 'audio-only' ? '#3b82f6' : 'transparent'}}>
                                             <input
                                                 type="radio"

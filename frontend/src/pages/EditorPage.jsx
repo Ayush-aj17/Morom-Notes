@@ -12,7 +12,7 @@ import StudyBuddy from '../components/StudyBuddy';
 
 // Helper function to estimate line height based on content type
 const estimateLineHeight = (line) => {
-  const ESTIMATED_LINE_HEIGHT = 23;
+  const ESTIMATED_LINE_HEIGHT = 18;
   let lineHeight = ESTIMATED_LINE_HEIGHT;
 
   if (line.match(/^#{1,6}\s/)) {

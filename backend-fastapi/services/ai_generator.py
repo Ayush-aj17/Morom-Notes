@@ -404,53 +404,149 @@ def extract_video_id(url: str):
 
 def generate_notes_from_url(url: str, progress_callback=None, existing_video_path: str = None, pipeline: str = "audio-video") -> tuple[str, str]:
     """Pass the YouTube URL directly to Gemini by downloading the video first."""
+
+    if pipeline == "transcript-only":
+        logging.info("Transcript-only pipeline: fetching YouTube transcript directly.")
+        if progress_callback:
+            progress_callback(10, "Fetching YouTube transcript...")
+        try:
+            _ensure_package("youtube-transcript-api", "youtube_transcript_api", progress_callback)
+            from youtube_transcript_api import YouTubeTranscriptApi
+            from urllib.parse import urlparse, parse_qs
+            
+            # Extract video_id
+            parsed_url = urlparse(url)
+            video_id = None
+            if parsed_url.hostname in ('youtu.be', 'www.youtu.be'):
+                video_id = parsed_url.path[1:]
+            elif parsed_url.hostname in ('youtube.com', 'www.youtube.com'):
+                qs = parse_qs(parsed_url.query)
+                if 'v' in qs:
+                    video_id = qs['v'][0]
+            
+            if not video_id:
+                raise ValueError("Could not extract video ID from YouTube URL.")
+                
+            import requests
+            session = requests.Session()
+            session.verify = False  # Ignore SSL errors which block direct requests from Python
+            
+            api = YouTubeTranscriptApi(http_client=session)
+            
+            # Fetch the transcript explicitly seeking "en" to prevent failures with formatting issues
+            transcript_list = api.list(video_id).find_transcript(['en']).fetch()
+            transcript_text = " ".join([t.text if hasattr(t, 'text') else t.get('text', '') for t in transcript_list])
+            
+            if progress_callback:
+                progress_callback(50, "Generating notes from transcript with Gemini...")
+            
+            notes = generate_notes_from_transcript(transcript_text)
+            return notes, None
+        except Exception as e:
+            logging.error(f"Failed to fetch transcript directly: {e}")
+            raise RuntimeError(f"Could not fetch transcript directly. Try Audio-only mode. Error: {e}")
+
+    if pipeline == "audio-only":
+        # For audio-only, skip video download and use direct transcription
+        logging.info("Audio-only pipeline: extracting audio/transcription directly from YouTube.")
+        try:
+            _ensure_package("yt-dlp", "yt_dlp", progress_callback)
+            import yt_dlp
+        except Exception as e:
+            raise RuntimeError(f"Failed to auto-install 'yt_dlp': {e}") from e
+
+        # Use yt-dlp to extract audio URL or download audio only
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'quiet': True,
+            'no_warnings': True,
+            'nocheckcertificate': True,
+            'outtmpl': '%(id)s.%(ext)s',
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            # Try to get direct audio URL
+            audio_url = None
+            if 'url' in info:
+                audio_url = info['url']
+            elif 'formats' in info:
+                for f in info['formats']:
+                    if f.get('acodec') != 'none' and f.get('vcodec') == 'none':
+                        audio_url = f.get('url')
+                        break
+            if not audio_url:
+                raise RuntimeError("Could not extract audio stream from YouTube video.")
+
+        # Now transcribe the audio_url using Whisper
+        if progress_callback:
+            progress_callback(55, "Transcribing audio stream with Whisper...")
+        try:
+            _ensure_package("openai-whisper", "whisper", progress_callback)
+            import whisper
+            import torch
+        except Exception as e:
+            raise RuntimeError(f"Failed to auto-install 'openai-whisper': {e}") from e
+
+        # Download the audio to a temp file for Whisper
+        import tempfile
+        import requests
+        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as tmp_audio:
+            audio_data = requests.get(audio_url, stream=True)
+            for chunk in audio_data.iter_content(chunk_size=8192):
+                tmp_audio.write(chunk)
+            tmp_audio_path = tmp_audio.name
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        model = whisper.load_model("base", device=device)
+        result = model.transcribe(tmp_audio_path, fp16=False)
+        transcript = result["text"]
+
+        # Clean up temp file
+        try:
+            os.remove(tmp_audio_path)
+        except Exception:
+            pass
+
+        # Send transcript to Gemini for note generation
+        if progress_callback:
+            progress_callback(70, "Generating notes from transcript with Gemini...")
+        notes = generate_notes_from_transcript(transcript)
+        return notes, None
+
+    # Default: audio-video pipeline (download video as before)
     client = initialize_client()
-    
     video_id = extract_video_id(url)
     if not video_id:
         raise ValueError("Invalid YouTube URL provided.")
-    
     try:
         _ensure_package("yt-dlp", "yt_dlp", progress_callback)
         import yt_dlp
     except Exception as e:
         raise RuntimeError(f"Failed to auto-install 'yt_dlp': {e}") from e
-        
     cache_dir = os.path.join(os.getcwd(), "uploads", "videos")
     os.makedirs(cache_dir, exist_ok=True)
     video_path = existing_video_path or os.path.join(cache_dir, f"{video_id}.mp4")
-
     if existing_video_path and os.path.exists(existing_video_path):
         logging.info(f"Using cached video from {existing_video_path}")
         if progress_callback:
             progress_callback(50, "Using cached video. Processing with AI...")
     else:
-        # Define progress hook for yt-dlp
         def ydl_hook(d):
             if d['status'] == 'downloading' and progress_callback:
-                # Extract percentage and ETA from yt-dlp dictionary
                 percent = d.get('_percent_str', '').strip()
                 eta = d.get('_eta_str', '').strip()
                 speed = d.get('_speed_str', '').strip()
-                
-                # Keep progress between 10% and 50% during download
                 try:
-                    # Parse numeric percentage (e.g. "22.4%")
                     percent_val = float(percent.replace('%', '').strip())
-                    # Map 0-100% download to 10-50% overall progress
                     mapped_progress = 10 + int(percent_val * 0.4)
                 except:
                     mapped_progress = 25
-                
                 progress_text = f"Downloading video: {percent}"
                 if eta: progress_text += f" (ETA: {eta})"
                 if speed: progress_text += f" at {speed}"
-                
                 progress_callback(mapped_progress, progress_text)
             elif d['status'] == 'finished' and progress_callback:
                 progress_callback(50, "Download complete. Processing video with AI...")
-
-        # Download a low-res version to save bandwidth but keep frames readable (e.g. 720p maximum)
         ydl_opts = {
             'format': 'best[height<=720]',
             'outtmpl': video_path,
@@ -463,16 +559,8 @@ def generate_notes_from_url(url: str, progress_callback=None, existing_video_pat
         logging.info(f"Downloading media via yt-dlp to {video_path}")
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
-            
-    if pipeline == "audio-only":
-        logging.info("Video ready. Processing audio contents exclusively...")
-        if progress_callback:
-            progress_callback(55, "Uploading audio to AI for processing...")
-    else:
-        logging.info("Video ready. Processing visual and audio contents...")
-        if progress_callback:
-            progress_callback(55, "Uploading video to AI for multimodal processing...")
-        
+    if progress_callback:
+        progress_callback(55, "Uploading video to AI for multimodal processing...")
     return generate_notes_from_video_file(video_path, mime_type="video/mp4", progress_callback=progress_callback, pipeline=pipeline), video_path
 
 

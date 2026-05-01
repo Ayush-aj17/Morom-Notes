@@ -84,8 +84,8 @@ async def generate_note(
 
         # Validate pipeline parameter
         pipeline = pipeline.strip().lower() if pipeline else "audio-video"
-        if pipeline not in {"audio-only", "audio-video"}:
-            raise HTTPException(status_code=400, detail="pipeline must be either 'audio-only' or 'audio-video'.")
+        if pipeline not in {"audio-only", "audio-video", "transcript-only"}:
+            raise HTTPException(status_code=400, detail="pipeline must be either 'audio-only', 'audio-video', or 'transcript-only'.")
 
         if video_url:
 

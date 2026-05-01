@@ -764,26 +764,37 @@ const [renamingNoteId, setRenamingNoteId] = useState(null);
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 <div className="text-xs font-medium text-stone-500 uppercase mb-2">Your Folders</div>
                 {[{ id: null, name: 'Loose Notes', isDefault: true }, ...folders].map(folder => (
-                  <button
-                    key={folder.id === null ? 'loose-notes' : folder.id}
-                    onClick={() => {
-                      setActiveFolder(folder.id);
-                      setMobileShowFolders(false);
-                    }}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
-                      activeFolder === folder.id
-                        ? 'bg-primary/20 text-primary font-medium border border-primary/30'
-                        : 'hover:bg-stone-50 text-stone-700 border border-transparent'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{folder.isDefault ? '📋' : '📁'}</span>
-                      <div>
-                        <p className="font-medium">{folder.name}</p>
-                        {folder.isDefault && <p className="text-xs text-stone-500">(default)</p>}
+                  <div key={folder.id === null ? 'loose-notes' : folder.id} className="relative">
+                    <button
+                      onClick={() => {
+                        setActiveFolder(folder.id);
+                        setMobileShowFolders(false);
+                      }}
+                      className={`w-full text-left p-3 rounded-lg transition-colors ${
+                        activeFolder === folder.id
+                          ? 'bg-primary/20 text-primary font-medium border border-primary/30'
+                          : 'hover:bg-stone-50 text-stone-700 border border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{folder.isDefault ? '📋' : '📁'}</span>
+                        <div>
+                          <p className="font-medium">{folder.name}</p>
+                          {folder.isDefault && <p className="text-xs text-stone-500">(default)</p>}
+                        </div>
                       </div>
-                    </div>
-                  </button>
+                    </button>
+                    {/* Paste button for mobile folders */}
+                    {clipboard.operation && clipboard.noteIds.length > 0 && (
+                      <button
+                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-green-100 text-green-700 hover:bg-green-200 rounded px-2 py-1 text-xs font-medium shadow-md z-10"
+                        onClick={(e) => { e.stopPropagation(); handlePasteNote(folder.id, e); setMobileShowFolders(false); }}
+                        title="Paste copied/cut notes"
+                      >
+                        📌 Paste
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             </motion.div>
@@ -923,38 +934,34 @@ const [renamingNoteId, setRenamingNoteId] = useState(null);
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="fixed bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 w-[95%] sm:w-auto max-w-[360px] sm:max-w-none z-40 bg-white border border-stone-200 rounded-2xl shadow-2xl p-3 sm:p-4 flex flex-wrap sm:flex-nowrap justify-center gap-2 sm:gap-3 items-center backdrop-blur-sm bg-white/95"
+              className="fixed bottom-0 left-0 w-full z-50 sm:bottom-6 sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:w-auto sm:max-w-none bg-white border-t border-stone-300 sm:border sm:rounded-2xl shadow-2xl p-4 flex flex-wrap sm:flex-nowrap justify-center gap-3 items-center"
+              style={{ boxShadow: '0 0 24px 0 rgba(0,0,0,0.10)' }}
             >
-              <span className="text-xs sm:text-sm font-medium text-stone-700 whitespace-nowrap">
+              <span className="text-sm font-medium text-stone-700 whitespace-nowrap">
                 {selectedNotes.size} selected
               </span>
-              
               <div className="hidden sm:block w-px h-6 bg-stone-200"></div>
-              
               <button
                 onClick={handleBulkCopy}
-                className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg transition font-medium cursor-pointer"
+                className="text-base px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition font-semibold cursor-pointer"
               >
-                📋 Copy ({selectedNotes.size})
+                📋 Copy
               </button>
-              
               <button
                 onClick={handleBulkCut}
-                className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded-lg transition font-medium cursor-pointer"
+                className="text-base px-4 py-2 bg-yellow-500 text-white hover:bg-yellow-600 rounded-lg transition font-semibold cursor-pointer"
               >
-                ✂️ Cut ({selectedNotes.size})
+                ✂️ Cut
               </button>
-              
               <button
                 onClick={handleBulkDelete}
-                className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg transition font-medium cursor-pointer"
+                className="text-base px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition font-semibold cursor-pointer"
               >
-                🗑️ Delete ({selectedNotes.size})
+                🗑️ Delete
               </button>
-
               <button
                 onClick={() => setSelectedNotes(new Set())}
-                className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg transition cursor-pointer sm:ml-2"
+                className="text-base px-4 py-2 bg-gray-300 text-gray-800 hover:bg-gray-400 rounded-lg transition font-semibold cursor-pointer sm:ml-2"
               >
                 Clear
               </button>

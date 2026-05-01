@@ -7,9 +7,16 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
+    allowedHosts: true,
     hmr: {
       host: 'localhost',
       port: 5173
+    },
+    proxy: {
+      '^/(api|auth|lectures|documents|export-pdf|ai-edit|health)': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true
+      }
     }
   }
 })
