@@ -9,8 +9,7 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: true,
     hmr: {
-      host: 'localhost',
-      port: 5173
+      clientPort: 443
     },
     proxy: {
       '^/(api|auth|lectures|documents|export-pdf|ai-edit|health)': {

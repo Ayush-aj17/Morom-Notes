@@ -14,34 +14,34 @@ export default function HeroPage() {
 
     const features = [
         {
-            icon: "🔐",
-            title: "Sign Up & Login",
-            description: "Create your account or login to access your personal note-taking workspace. Secure authentication keeps your content safe."
+            icon: "⚡",
+            title: "Instant Video Summaries",
+            description: "Paste a YouTube link or upload a video lecture. Our AI instantly extracts transcripts and organizes the material into logical, easy-to-read structured study notes."
+        },
+        {
+            icon: "🧠",
+            title: "Smart Document Extraction",
+            description: "Upload PDFs, PowerPoints, or images. We automatically parse slides, text, and visual context so you never miss a detail from your professor's presentation."
+        },
+        {
+            icon: "🎙️",
+            title: "Flawless Audio Transcription",
+            description: "Perfect for recorded meetings or audio lectures. Upload your audio files to get highly accurate transcripts transformed into bulleted summaries instantly."
         },
         {
             icon: "📝",
-            title: "Build Beautiful Notes",
-            description: "Use our rich text editor to create well-organized notes with formatting, headings, and more. Watch your content come to life."
+            title: "Notion-Style Rich Editor",
+            description: "A beautiful, interactive workspace to edit your AI-generated notes. Organize with folders, bold formatting, and markdown support tailored specifically for students."
         },
         {
-            icon: "📂",
-            title: "Upload Documents & Media",
-            description: "Upload videos (.mp4, .mov), audio (.wav), images (.jpg, .png), PDFs, and PowerPoint presentations. Our visual and audio pipelines instantly extract key information."
-        },
-        {
-            icon: "🔗",
-            title: "Add YouTube Links",
-            description: "Embed YouTube video URLs directly! The system processes the audio and visual frames natively to extract complete transcripts and lecture context (Note: Only YouTube links are natively supported)."
-        },
-        {
-            icon: "✨",
-            title: "AI-Powered Generation",
-            description: "Let our AI assistant analyze the uploaded media and YouTube transcripts to automatically generate comprehensive summaries, study guides, and neatly formatted markdown notes."
+            icon: "🎓",
+            title: "AI-Powered Study Guides",
+            description: "Stop spending hours manually writing notes. Our AI analyzes the core concepts and automatically generates comprehensive study guides and flashcard-ready points."
         },
         {
             icon: "🖨️",
-            title: "Export & Print",
-            description: "Export your notes as beautiful PDF files and print them directly in a clean, professional format for easy reading and offline reference."
+            title: "Print-Ready PDF Exports",
+            description: "Take your notes anywhere. With one click, export your perfectly formatted study materials into clean, professional PDFs ready for printing and offline review."
         }
     ];
 
@@ -153,9 +153,9 @@ export default function HeroPage() {
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-display font-medium text-stone-800 mb-4 sm:mb-6 leading-tight"
                     >
-                        Learn Smarter with
+                        Turn Any Lecture Into
                         <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                            Smart AI Notes
+                            Perfect Study Notes
                         </span>
                     </motion.div>
 
@@ -165,7 +165,7 @@ export default function HeroPage() {
                         transition={{ duration: 0.6, delay: 0.4 }}
                         className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-stone-600 mb-6 sm:mb-8 md:mb-10 font-handwriting"
                     >
-                        Transform videos into organized, AI-powered study materials
+                        Instantly transform YouTube videos, PDFs, and lectures into comprehensive study guides using AI.
                     </motion.p>
 
                     <motion.div
@@ -200,7 +200,7 @@ export default function HeroPage() {
                         {...fadeInUp}
                         className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-medium text-stone-800 text-center mb-8 sm:mb-12 md:mb-16"
                     >
-                        What You Can Do
+                        Your Study Advantages
                     </motion.h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">

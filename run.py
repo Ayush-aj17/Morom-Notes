@@ -54,7 +54,8 @@ def apply_env_edits(url):
 def run_backend():
     print("[BACKEND] Starting FastAPI on port 8000...")
     proc = subprocess.Popen(
-        [sys.executable, "backend-fastapi/run_server.py"],
+        [sys.executable, "run_server.py"],
+        cwd="backend-fastapi",
         stdout=subprocess.DEVNULL, # hide noisy background logs
         stderr=subprocess.STDOUT
     )
