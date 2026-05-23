@@ -26,8 +26,8 @@ def start_tunnel_and_get_url():
             break
             
     print("\n" + "="*70)
-    print(f"ðŸš€ YOUR NEW PUBLIC URL IS READY! MUST OPEN THIS: ðŸš€")
-    print(f"    âž¡ï¸Ž  {url}  â¬…ï¸Ž")
+    print(f"   YOUR NEW PUBLIC URL IS READY! MUST OPEN THIS:   ")
+    print(f"    {url}   ")
     print("="*70 + "\n")
     return proc, url
 

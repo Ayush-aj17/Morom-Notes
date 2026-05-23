@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authFetch } from '../api/api';
@@ -65,27 +65,13 @@ const getContextIndices = (lines, lineIndex) => {
   return contextIndices;
 };
 
-const getParentContext = (lines, lineIndex) => {
-  if (lineIndex < 0 || lineIndex >= lines.length) return [];
-  const contextLines = [];
-  const searchLimit = Math.max(0, lineIndex - 150);
-  for (let i = lineIndex - 1; i >= searchLimit; i--) {
-    const line = lines[i];
-    if (line.match(/^#{1,6}\s/)) {
-      contextLines.unshift(line);
-      break;
-    }
-  }
-  return contextLines;
-};
-
 // Content Pages Pagination Component
 function ContentPages({ content, startPageNumber = 2, isSimplePreview = false }) {
   const pages = useMemo(() => {
     if (!content) return [];
 
     const PAGE_HEIGHT_ESTIMATE = 880;
-    const PADDING_BUFFER = 40;
+    const PADDING_BUFFER = 70;
     const pagesList = [];
     const lines = content.split('\n');
     let currentPageLines = [];
@@ -190,10 +176,6 @@ function ContentPages({ content, startPageNumber = 2, isSimplePreview = false })
     if (currentPageLines.length > 0) {
       let contentToSave = currentPageLines.join('\n').trimEnd();
       let contextLines = [];
-      const parentHeadings = getParentContext(lines, currentPageLineIndices[0]);
-      if (parentHeadings.length > 0 && !contentToSave.startsWith('#')) {
-        contextLines.push(...parentHeadings, '');
-      }
       if (currentPageLines.length > 0 && currentPageLines[0].match(/^\s+/)) {
         const firstLineIndent = currentPageLines[0].match(/^(\s*)/)[1].length;
         if (firstLineIndent >= 2) {
@@ -298,7 +280,7 @@ function ContentPages({ content, startPageNumber = 2, isSimplePreview = false })
 
   if (isSimplePreview) {
     return (
-      <div className="w-full prose prose-stone max-w-none space-y-8 prose-headings:font-display prose-headings:font-bold prose-headings:text-stone-900 prose-headings:mt-4 prose-headings:mb-2 prose-h1:text-xl prose-h2:text-lg prose-h3:text-base prose-p:font-handwriting prose-p:text-[14px] prose-p:leading-relaxed prose-p:my-2 prose-ul:my-2 prose-ul:ml-4 prose-ul:prose-ul:ml-6 prose-ol:my-2 prose-ol:ml-4 prose-ol:prose-ol:ml-6 prose-li:my-0.5 prose-li:marker:font-bold prose-strong:bg-yellow-100 prose-strong:px-1 prose-strong:rounded prose-em:italic prose-em:text-stone-700 prose-code:bg-stone-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-blockquote:my-2 prose-blockquote:border-l-4 prose-blockquote:border-yellow-400 prose-blockquote:pl-3 prose-blockquote:bg-yellow-50 prose-blockquote:italic">
+      <div className="w-full prose prose-stone max-w-none space-y-8 prose-headings:font-display prose-headings:font-bold prose-headings:text-stone-900 prose-headings:mt-4 prose-headings:mb-2 prose-h1:text-xl prose-h2:text-lg prose-h3:text-base prose-p:font-handwriting prose-p:text-[14px] prose-p:leading-relaxed prose-p:my-2 prose-ul:my-2 prose-ul:ml-4 prose-ul:prose-ul:ml-6 prose-ol:my-2 prose-ol:ml-4 prose-ol:prose-ol:ml-6 prose-li:my-0.5 prose-li:marker:font-bold prose-em:italic prose-em:text-stone-700 prose-code:bg-stone-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-blockquote:my-2 prose-blockquote:border-l-4 prose-blockquote:border-yellow-400 prose-blockquote:pl-3 prose-blockquote:bg-yellow-50 prose-blockquote:italic">
         {pages.map((pageContent, index) => (
           <div key={index} className="pb-6 border-b-2 border-stone-200 last:border-b-0 w-full">
             <p className="text-xs font-semibold text-stone-500 mb-3 px-2 py-1 bg-stone-100 rounded inline-block">Page {startPageNumber + index}</p>
@@ -317,11 +299,7 @@ function ContentPages({ content, startPageNumber = 2, isSimplePreview = false })
                     {children}
                   </pre>
                 ),
-                strong: ({ children, ...props }) => (
-                  <strong className="bg-yellow-100 text-black font-semibold px-1 rounded" {...props}>
-                    {children}
-                  </strong>
-                )
+                strong: HighlightedStrong
               }}
             >
               {pageContent}
@@ -356,7 +334,7 @@ function ContentPages({ content, startPageNumber = 2, isSimplePreview = false })
 
           {/* Content - Full page except footer */}
           <div
-            className="flex-1 overflow-hidden px-6 py-4 prose prose-sm prose-stone max-w-none"
+            className="flex-1 overflow-hidden px-6 pt-4 pb-0 prose prose-sm prose-stone max-w-none"
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -365,7 +343,7 @@ function ContentPages({ content, startPageNumber = 2, isSimplePreview = false })
               lineHeight: '1.5'
             }}
           >
-            <div className="overflow-hidden">
+            <div className="w-full">
               <ReactMarkdown
                 remarkPlugins={[remarkMath, remarkGfm]}
                 rehypePlugins={[rehypeKatex]}
@@ -381,11 +359,7 @@ function ContentPages({ content, startPageNumber = 2, isSimplePreview = false })
                       {children}
                     </pre>
                   ),
-                  strong: ({ children, ...props }) => (
-                    <strong className="bg-yellow-100 text-black font-semibold px-1 rounded" {...props}>
-                      {children}
-                    </strong>
-                  )
+                  strong: HighlightedStrong
                 }}
               >
                 {pageContent}
@@ -403,6 +377,17 @@ function ContentPages({ content, startPageNumber = 2, isSimplePreview = false })
     </>
   );
 }
+
+const HighlightedStrong = ({ children, ...props }) => {
+  return (
+    <strong
+      className="bg-yellow-100 text-black font-semibold px-1 rounded"
+      {...props}
+    >
+      {children}
+    </strong>
+  );
+};
 
 export default function EditorPage() {
   const { id } = useParams();
@@ -826,7 +811,7 @@ export default function EditorPage() {
         {/* Content Area - Full Screen Pages with Browser Scrolling */}
         <div
           ref={exportRef}
-          className={`flex-1 overflow-x-hidden bg-gradient-to-b from-gray-100 to-gray-200 ${isEditing ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}
+          className={`flex-1 overflow-x-hidden bg-gradient-to-b from-gray-100 to-gray-200 ${isEditing ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'} ${isExporting ? 'pdf-export-active' : ''}`}
           style={{
             scrollBehavior: 'smooth',
             display: 'flex',

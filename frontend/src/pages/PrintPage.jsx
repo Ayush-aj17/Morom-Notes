@@ -168,6 +168,23 @@ export default function PrintPage() {
             <ReactMarkdown
               remarkPlugins={[remarkMath]}
               rehypePlugins={[rehypeKatex]}
+              components={{
+                strong: ({ children }) => (
+                  <strong
+                    style={{
+                      fontWeight: 600,
+                      color: '#000',
+                      backgroundImage: 'linear-gradient(#fef08a, #fef08a)',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '100% 55%',
+                      backgroundPosition: '0 85%',
+                      padding: '0 2px'
+                    }}
+                  >
+                    {children}
+                  </strong>
+                )
+              }}
             >
               {note?.content || 'No content'}
             </ReactMarkdown>
@@ -188,7 +205,12 @@ export default function PrintPage() {
             margin: 0;
             padding: 0;
           }
-
+          strong {
+            background: none !important;
+            background-image: none !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+          }
           .no-print {
             display: none !important;
           }

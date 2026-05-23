@@ -106,3 +106,25 @@
     break-after: avoid;
   }
 }
+
+strong {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  box-decoration-break: clone;
+}
+
+@media print {
+  strong {
+    background: none !important;
+    background-color: transparent !important;
+    color: #d97706 !important; /* deep yellowish orange */
+    font-weight: 800 !important;
+  }
+}
+
+.pdf-export-active strong {
+  background: none !important;
+  background-color: transparent !important;
+  color: #d97706 !important;
+  font-weight: 800 !important;
+}
