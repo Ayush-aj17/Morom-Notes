@@ -148,12 +148,9 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     
     # Send OTP via email
     email_sent = False
-    if settings.email_sender and settings.email_password:
+    if settings.resend_api_key:
         email_service = EmailService(
-            smtp_server=settings.smtp_server,
-            smtp_port=settings.smtp_port,
-            sender_email=settings.email_sender,
-            sender_password=settings.email_password,
+            sender_email=settings.email_from,
         )
         email_sent = email_service.send_otp_email(new_user.email, otp, validity_minutes=5)
     
@@ -163,10 +160,10 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
         db.commit()
         raise HTTPException(
             status_code=503,
-            detail="We could not send the verification email. Check the backend SMTP settings and try again.",
+            detail="We could not send the verification email. Check the Resend settings and try again.",
         )
 
-    logger.info("Signup OTP accepted by SMTP server for %s", new_user.email)
+    logger.info("Signup OTP accepted by Resend for %s", new_user.email)
 
     return {
         "message": "Account created! OTP sent to your email. Verify your email to login.",
@@ -254,22 +251,19 @@ def forgot_password(email_request: dict, db: Session = Depends(get_db)):
     
     # Send OTP via email
     email_sent = False
-    if settings.email_sender and settings.email_password:
+    if settings.resend_api_key:
         email_service = EmailService(
-            smtp_server=settings.smtp_server,
-            smtp_port=settings.smtp_port,
-            sender_email=settings.email_sender,
-            sender_password=settings.email_password,
+            sender_email=settings.email_from,
         )
         email_sent = email_service.send_otp_email(db_user.email, otp, validity_minutes=10)
         if email_sent:
-            logger.info("Password reset OTP accepted by SMTP server for %s", db_user.email)
+            logger.info("Password reset OTP accepted by Resend for %s", db_user.email)
     
     if not email_sent:
         logger.warning("Password reset OTP could not be sent to %s", email)
         raise HTTPException(
             status_code=503,
-            detail="Reset email could not be sent. Configure valid SMTP credentials in backend-fastapi/.env.",
+            detail="Reset email could not be sent. Configure RESEND_API_KEY and EMAIL_FROM.",
         )
     
     return {
@@ -386,12 +380,9 @@ def request_email_verification(db: Session = Depends(get_db), current_user_id: i
     
     # Send OTP via email
     email_sent = False
-    if db_user.email and settings.email_sender and settings.email_password:
+    if db_user.email and settings.resend_api_key:
         email_service = EmailService(
-            smtp_server=settings.smtp_server,
-            smtp_port=settings.smtp_port,
-            sender_email=settings.email_sender,
-            sender_password=settings.email_password,
+            sender_email=settings.email_from,
         )
         email_sent = email_service.send_otp_email(db_user.email, otp, validity_minutes=10)
     
@@ -399,7 +390,7 @@ def request_email_verification(db: Session = Depends(get_db), current_user_id: i
         logger.warning("Verification OTP could not be sent to %s", db_user.email)
         raise HTTPException(
             status_code=503,
-            detail="We could not send the verification email. Check the backend SMTP settings and try again.",
+            detail="We could not send the verification email. Check the Resend settings and try again.",
         )
 
     return {

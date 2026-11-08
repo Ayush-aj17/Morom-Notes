@@ -48,11 +48,9 @@ class Settings(BaseSettings):
     upload_dir: str = Field("uploads", env="UPLOAD_DIR")
     max_upload_size_mb: int = Field(100, env="MAX_UPLOAD_SIZE_MB")
 
-    # email settings for OTP delivery
-    email_sender: Optional[str] = Field(None, env="EMAIL_SENDER")
-    email_password: Optional[str] = Field(None, env="EMAIL_PASSWORD")
-    smtp_server: str = Field("smtp.gmail.com", env="SMTP_SERVER")
-    smtp_port: int = Field(587, env="SMTP_PORT")
+    # Resend settings for OTP delivery
+    resend_api_key: Optional[str] = Field(None, env="RESEND_API_KEY")
+    email_from: str = Field("onboarding@resend.dev", env="EMAIL_FROM")
 
     # testing flag pulled from environment, used by many modules to disable
     # background workers or external API calls.

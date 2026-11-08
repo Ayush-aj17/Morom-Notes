@@ -27,7 +27,10 @@ from routes import auth, dashboard, generation, lectures, documents
 app = FastAPI()
 
 # log some settings (exclude sensitive fields)
-logging.getLogger(__name__).info("app starting with config: %s", {k: v for k, v in settings.dict().items() if k != 'secret_key'})
+logging.getLogger(__name__).info(
+    "app starting with config: %s",
+    {k: v for k, v in settings.model_dump().items() if k not in {"secret_key", "resend_api_key"}},
+)
 
 app.add_middleware(
     CORSMiddleware,

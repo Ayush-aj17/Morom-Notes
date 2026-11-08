@@ -27,11 +27,7 @@ class EmailService:
         if api_key:
             resend.api_key = api_key
 
-        self.sender_email = (
-            sender_email
-            or os.getenv("EMAIL_FROM")
-            or "onboarding@resend.dev"
-        )
+        self.sender_email = sender_email or os.getenv("EMAIL_FROM") or "onboarding@resend.dev"
 
     def send_otp_email(
         self,
@@ -104,10 +100,8 @@ Do not share your OTP with anyone.
                 "html": html,
             })
 
-            logger.info(
-                "OTP email accepted by Resend. Email ID: %s",
-                result.get("id")
-            )
+            email_id = result.get("id") if isinstance(result, dict) else getattr(result, "id", None)
+            logger.info("OTP email accepted by Resend. Email ID: %s", email_id)
 
             return True
 
@@ -169,10 +163,8 @@ Happy note-taking!
                 "html": html,
             })
 
-            logger.info(
-                "Welcome email accepted by Resend. Email ID: %s",
-                result.get("id")
-            )
+            email_id = result.get("id") if isinstance(result, dict) else getattr(result, "id", None)
+            logger.info("Welcome email accepted by Resend. Email ID: %s", email_id)
 
             return True
 
