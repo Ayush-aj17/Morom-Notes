@@ -98,6 +98,7 @@ Do not share your OTP with anyone.
             
             # Send email
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.set_debuglevel(0)
                 server.starttls()
                 server.login(self.sender_email, self.sender_password)
                 server.sendmail(
@@ -106,7 +107,7 @@ Do not share your OTP with anyone.
                     message.as_string()
                 )
             
-            logger.info(f"OTP email sent successfully to {recipient_email}")
+            logger.info("OTP email accepted by SMTP server for %s", recipient_email)
             return True
             
         except smtplib.SMTPAuthenticationError:

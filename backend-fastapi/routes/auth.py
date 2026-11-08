@@ -110,10 +110,13 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     # Check if email already exists
     existing_email = db.query(User).filter(User.email == user_data.email).first()
     if existing_email:
-        raise HTTPException(
-            status_code=400, 
-            detail="Account with this email already exists"
-        )
+        if existing_email.email_verified:
+            raise HTTPException(
+                status_code=400,
+                detail="Account with this email already exists"
+            )
+        db.delete(existing_email)
+        db.commit()
     
     # Check if username already exists
     existing_username = db.query(User).filter(User.username == user_data.username).first()
@@ -145,7 +148,7 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     
     # Send OTP via email
     email_sent = False
-    if settings.email_sender:
+    if settings.email_sender and settings.email_password:
         email_service = EmailService(
             smtp_server=settings.smtp_server,
             smtp_port=settings.smtp_port,
@@ -153,11 +156,18 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
             sender_password=settings.email_password,
         )
         email_sent = email_service.send_otp_email(new_user.email, otp, validity_minutes=5)
-        logger.info(f"OTP sent to {new_user.email} for signup")
     
-    if not email_sent and settings.email_sender:
-        logger.warning(f"Failed to send OTP email to {new_user.email}")
-    
+    if not email_sent:
+        logger.error("Signup OTP was not delivered to %s", new_user.email)
+        db.delete(new_user)
+        db.commit()
+        raise HTTPException(
+            status_code=503,
+            detail="We could not send the verification email. Check the backend SMTP settings and try again.",
+        )
+
+    logger.info("Signup OTP accepted by SMTP server for %s", new_user.email)
+
     return {
         "message": "Account created! OTP sent to your email. Verify your email to login.",
         "email": new_user.email,
@@ -252,7 +262,8 @@ def forgot_password(email_request: dict, db: Session = Depends(get_db)):
             sender_password=settings.email_password,
         )
         email_sent = email_service.send_otp_email(db_user.email, otp, validity_minutes=10)
-        logger.info(f"Password reset OTP sent to {db_user.email}")
+        if email_sent:
+            logger.info("Password reset OTP accepted by SMTP server for %s", db_user.email)
     
     if not email_sent:
         logger.warning("Password reset OTP could not be sent to %s", email)
@@ -375,7 +386,7 @@ def request_email_verification(db: Session = Depends(get_db), current_user_id: i
     
     # Send OTP via email
     email_sent = False
-    if db_user.email and settings.email_sender:
+    if db_user.email and settings.email_sender and settings.email_password:
         email_service = EmailService(
             smtp_server=settings.smtp_server,
             smtp_port=settings.smtp_port,
@@ -384,11 +395,15 @@ def request_email_verification(db: Session = Depends(get_db), current_user_id: i
         )
         email_sent = email_service.send_otp_email(db_user.email, otp, validity_minutes=10)
     
-    if not email_sent and settings.email_sender:
-        logger.warning(f"Failed to send verification email to {db_user.email}")
-    
+    if not email_sent:
+        logger.warning("Verification OTP could not be sent to %s", db_user.email)
+        raise HTTPException(
+            status_code=503,
+            detail="We could not send the verification email. Check the backend SMTP settings and try again.",
+        )
+
     return {
-        "message": "OTP sent to your email"
+        "message": "Verification OTP accepted by the email server"
     }
 
 @router.post("/verify-email", response_model=dict)
