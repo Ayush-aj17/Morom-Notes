@@ -20,24 +20,11 @@ const getSourceInfo = (note) => {
     };
   }
 
-  // Otherwise use source_type for file-based sources
-  if (!note.source_type) {
-    return { sourceType: 'unknown', displayText: 'Unknown Source', sourceUrl: '' };
-  }
-
-  const sourceTypeStr = note.source_type.toLowerCase();
-
-  if (sourceTypeStr.includes('pdf')) {
-    return { sourceType: 'PDF', displayText: 'Uploaded PDF', sourceUrl: '' };
-  } else if (sourceTypeStr.includes('ppt')) {
-    return { sourceType: 'PowerPoint', displayText: 'Uploaded PowerPoint', sourceUrl: '' };
-  } else if (sourceTypeStr.includes('image') || sourceTypeStr.includes('img')) {
-    return { sourceType: 'Image', displayText: 'Uploaded Image', sourceUrl: '' };
-  } else if (sourceTypeStr.includes('video')) {
-    return { sourceType: 'Video', displayText: 'Uploaded Video', sourceUrl: '' };
-  }
-
-  return { sourceType: 'Unknown', displayText: 'Unknown Source', sourceUrl: '' };
+  return {
+    sourceType: 'unknown',
+    displayText: 'YouTube Video',
+    sourceUrl: '',
+  };
 };
 
 // Helper function to format created date
@@ -99,15 +86,38 @@ export default function Dashboard() {
   const [noteOrder, setNoteOrder] = useState([]);
   const [draggedNoteId, setDraggedNoteId] = useState(null);
   const [mobileShowFolders, setMobileShowFolders] = useState(false);
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const dismissOnboarding = () => {
+    localStorage.setItem('hasSeenOnboarding', 'true');
+    setShowOnboarding(false);
+  };
 
   const fetchDashboardData = async () => {
+    setIsLoading(true);
     try {
       const folderRes = await authFetch(`/api/folders`);
       const noteRes = await authFetch(`/api/notes`);
       if (folderRes.ok) setFolders(await folderRes.json());
-      if (noteRes.ok) setNotes(await noteRes.json());
+      if (noteRes.ok) {
+        const fetchedNotes = await noteRes.json();
+        setNotes(fetchedNotes);
+        
+        // Onboarding logic
+        const hasSeen = localStorage.getItem('hasSeenOnboarding');
+        if (!hasSeen && fetchedNotes.length === 0) {
+          setShowOnboarding(true);
+        } else if (fetchedNotes.length > 0) {
+          localStorage.setItem('hasSeenOnboarding', 'true');
+          setShowOnboarding(false);
+        }
+      }
     } catch (e) {
       console.error(e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -598,9 +608,47 @@ const [renamingNoteId, setRenamingNoteId] = useState(null);
           <p className="hidden sm:block text-xs sm:text-sm text-stone-500 font-handwriting truncate">hello, {user}</p>
         </div>
         <div className="flex gap-2 sm:gap-4 items-center flex-shrink-0 ml-4">
-          <Link to="/upload" className="bg-primary hover:bg-primary/90 text-white px-3 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg transition-transform hover:-translate-y-0.5 shadow-sm font-medium cursor-pointer whitespace-nowrap flex justify-center items-center">
-            + New Note
-          </Link>
+          <div className="relative">
+            <Link 
+              to="/upload" 
+              onClick={dismissOnboarding}
+              className="bg-primary hover:bg-primary/90 text-white px-3 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg transition-transform hover:-translate-y-0.5 shadow-sm font-medium cursor-pointer whitespace-nowrap flex justify-center items-center"
+            >
+              + New Note
+            </Link>
+            
+            <AnimatePresence>
+              {showOnboarding && !isLoading && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  className="absolute top-[120%] right-0 md:right-auto md:left-0 w-64 bg-white rounded-xl shadow-2xl border-2 border-blue-400 p-4 z-[100]"
+                >
+                  <div className="absolute -top-[9px] right-6 md:right-auto md:left-8 w-4 h-4 bg-white border-l-2 border-t-2 border-blue-400 transform rotate-45"></div>
+                  
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-1" role="img" aria-label="wave">👋</span>
+                    <div>
+                      <h3 className="font-bold text-gray-800 text-sm mb-1.5 font-display">
+                        Welcome to Morom!
+                      </h3>
+                      <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+                        Ready to summarize your first YouTube lecture? Click here to start generating notes instantly.
+                      </p>
+                      
+                      <button 
+                        onClick={dismissOnboarding}
+                        className="text-xs w-full py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-md font-medium transition-colors"
+                      >
+                        Okay, got it!
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           <AccountSwitcher />
         </div>
       </header>

@@ -1,0 +1,22 @@
+warning: in the working copy of 'frontend/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/api/api.js', LF will be replaced by CRLF the next time Git touches it
+frontend/README.md:38: trailing whitespace.
+[32m+[m[32mThis interface is an aggressively optimized static site and is ready to deploy natively to Edge/CDN networks like **Vercel**, **Netlify**, or **Cloudflare Pages**.[m[41m [m
+frontend/src/pages/Dashboard.jsx:89: trailing whitespace.
+[32m+[m[41m  [m
+frontend/src/pages/Dashboard.jsx:107: trailing whitespace.
+[32m+[m[41m        [m
+frontend/src/pages/Dashboard.jsx:612: trailing whitespace.
+[32m+[m[32m            <Link[m[41m [m
+frontend/src/pages/Dashboard.jsx:613: trailing whitespace.
+[32m+[m[32m              to="/upload"[m[41m [m
+frontend/src/pages/Dashboard.jsx:619: trailing whitespace.
+[32m+[m[41m            [m
+frontend/src/pages/Dashboard.jsx:622: trailing whitespace.
+[32m+[m[32m                <motion.div[m[41m [m
+frontend/src/pages/Dashboard.jsx:629: trailing whitespace.
+[32m+[m[41m                  [m
+frontend/src/pages/Dashboard.jsx:639: trailing whitespace.
+[32m+[m[41m                      [m
+frontend/src/pages/Dashboard.jsx:640: trailing whitespace.
+[32m+[m[32m                      <button[m[41m [m

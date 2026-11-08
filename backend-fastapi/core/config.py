@@ -75,3 +75,8 @@ except ValidationError as exc:
     # re‑raise so the application cannot start with invalid settings
     raise
 
+if settings.testing and not settings.database_url.startswith("sqlite"):
+    logging.warning(
+        "TESTING is enabled; using local SQLite instead of the configured remote database."
+    )
+    settings.database_url = "sqlite:///./app.db"

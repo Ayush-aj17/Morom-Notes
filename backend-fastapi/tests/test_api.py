@@ -69,13 +69,13 @@ client = TestClient(app)
 
 def test_signup_and_login():
     # sign up new user
-    resp = client.post("/auth/signup", json={"username": "tester", "password": "secret", "email": "test@test.com"})
+    resp = client.post("/auth/signup", json={"username": "tester", "password": "secret", "email": "test@test.com", "email": "test@test.com"})
     assert resp.status_code == 200
     data = resp.json()
     assert "access_token" in data
 
     # login with same credentials
-    resp2 = client.post("/auth/login", json={"username": "tester", "password": "secret", "email": "test@test.com"})
+    resp2 = client.post("/auth/login", json={"username": "tester", "password": "secret", "email": "test@test.com", "email": "test@test.com"})
     assert resp2.status_code == 200
     assert resp2.json()["username"] == "tester"
 
@@ -83,7 +83,7 @@ def test_signup_and_login():
 def test_lecture_upload():
     # need to login first; sign up if necessary
     ensure_user("lecuser", "pwd")
-    resp = client.post("/auth/login", json={"username": "lecuser", "password": "pwd", "email": "test@test.com"})
+    resp = client.post("/auth/login", json={"username": "lecuser", "password": "pwd", "email": "test@test.com", "email": "test@test.com"})
     token = resp.json()["access_token"]
 
     # upload a small fake file
@@ -98,7 +98,7 @@ def test_lecture_upload():
 
 def test_invalid_upload_type():
     # login and try to upload a .txt file, expect 400
-    resp = client.post("/auth/login", json={"username": "lecuser", "password": "pwd", "email": "test@test.com"})
+    resp = client.post("/auth/login", json={"username": "lecuser", "password": "pwd", "email": "test@test.com", "email": "test@test.com"})
     token = resp.json()["access_token"]
     files = {"file": ("notes.txt", b"hello", "text/plain")}
     headers = {"Authorization": f"Bearer {token}"}
@@ -111,7 +111,7 @@ def test_upload_too_large():
     original = settings.max_upload_size_mb
     settings.max_upload_size_mb = 0
     try:
-        resp = client.post("/auth/login", json={"username": "lecuser", "password": "pwd", "email": "test@test.com"})
+        resp = client.post("/auth/login", json={"username": "lecuser", "password": "pwd", "email": "test@test.com", "email": "test@test.com"})
         token = resp.json()["access_token"]
         files = {"file": ("big.mp4", b"0" * 1024, "video/mp4")}
         headers = {"Authorization": f"Bearer {token}"}
@@ -123,9 +123,9 @@ def test_upload_too_large():
 
 def test_lecture_access_control():
     # sign up two users and create a lecture with the first
-    resp = client.post("/auth/signup", json={"username": "user1", "password": "pass1", "email": "test@test.com"})
+    resp = client.post("/auth/signup", json={"username": "user1", "password": "pass1", "email": "test@test.com", "email": "test@test.com"})
     token1 = resp.json()["access_token"]
-    resp = client.post("/auth/signup", json={"username": "user2", "password": "pass2", "email": "test@test.com"})
+    resp = client.post("/auth/signup", json={"username": "user2", "password": "pass2", "email": "test@test.com", "email": "test@test.com"})
     token2 = resp.json()["access_token"]
 
     # user1 uploads
@@ -161,7 +161,7 @@ def ensure_user(username="lecuser", password="pwd"):
 def test_generate_endpoint_validation():
     # make sure account exists and login
     ensure_user("lecuser", "pwd")
-    resp = client.post("/auth/login", json={"username": "lecuser", "password": "pwd", "email": "test@test.com"})
+    resp = client.post("/auth/login", json={"username": "lecuser", "password": "pwd", "email": "test@test.com", "email": "test@test.com"})
     assert resp.status_code == 200, f"login failed: {resp.text}"
     token = resp.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
@@ -189,7 +189,7 @@ def test_generate_endpoint_validation():
 def test_note_generation_workflow():
     """Verify that generating notes creates a record and that background task fills it."""
     ensure_user("genuser", "pass")
-    resp = client.post("/auth/login", json={"username": "genuser", "password": "pass", "email": "test@test.com"})
+    resp = client.post("/auth/login", json={"username": "genuser", "password": "pass", "email": "test@test.com", "email": "test@test.com"})
     token = resp.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 

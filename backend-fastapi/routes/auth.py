@@ -11,6 +11,7 @@ from core.config import settings
 from datetime import timedelta
 from typing import List, Optional
 from jose import jwt, JWTError
+from sqlalchemy.exc import SQLAlchemyError
 import logging
 
 logger = logging.getLogger(__name__)
@@ -209,7 +210,14 @@ def forgot_password(email_request: dict, db: Session = Depends(get_db)):
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
     
-    db_user = find_user_by_email(db, email)
+    try:
+        db_user = find_user_by_email(db, email)
+    except SQLAlchemyError:
+        logger.exception("Password reset lookup failed")
+        raise HTTPException(
+            status_code=503,
+            detail="Password reset is temporarily unavailable. Check the backend database connection.",
+        )
     
     if not db_user:
         # Don't reveal if email exists or not for security, but still return generic message
@@ -224,11 +232,19 @@ def forgot_password(email_request: dict, db: Session = Depends(get_db)):
     
     db_user.otp = otp
     db_user.otp_expires_at = otp_expires_at
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("Could not save password reset OTP")
+        raise HTTPException(
+            status_code=503,
+            detail="Password reset is temporarily unavailable. Check the backend database connection.",
+        )
     
     # Send OTP via email
     email_sent = False
-    if settings.email_sender:
+    if settings.email_sender and settings.email_password:
         email_service = EmailService(
             smtp_server=settings.smtp_server,
             smtp_port=settings.smtp_port,
@@ -238,8 +254,12 @@ def forgot_password(email_request: dict, db: Session = Depends(get_db)):
         email_sent = email_service.send_otp_email(db_user.email, otp, validity_minutes=10)
         logger.info(f"Password reset OTP sent to {db_user.email}")
     
-    if not email_sent and settings.email_sender:
-        logger.warning(f"Failed to send password reset OTP to {email}")
+    if not email_sent:
+        logger.warning("Password reset OTP could not be sent to %s", email)
+        raise HTTPException(
+            status_code=503,
+            detail="Reset email could not be sent. Configure valid SMTP credentials in backend-fastapi/.env.",
+        )
     
     return {
         "message": "If an account exists with this email, you will receive an OTP",

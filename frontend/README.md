@@ -1,23 +1,61 @@
-# React + Vite (Lecture Notes Frontend)
+# Morom Notes (Frontend Web Application)
 
-This application is the frontend for the lecture-notes service. It is built with React 19 and Vite.
+This is the production-ready React client for the Morom Notes ecosystem. Built on Vite 6 and React 19, this SPA leverages an ultra-fast build toolchain and provides a dynamic interface for AI-generated lecture note management.
 
-> **Environment**
-> - Create a file named `.env.local` at the project root and set `VITE_API_BASE_URL` to point at your backend (e.g. `http://localhost:8000`).
-> - Example provided in `.env.example`.
-> - When running automated tests or building, make sure the variable is defined so API requests target the correct server.
+## Core Features
+1. **Markdown Editor & Engine**: Converts deeply nested markdown syntax flawlessly to the DOM using `react-markdown` and `remark/rehype` plugins featuring math/equation support (`KaTeX`).
+2. **Beautiful Highlighting & PDF Output**: Highly customized `html2canvas` and `jsPDF` renderers ensure accurate markdown exports, retaining UI elements flawlessly onto segmented responsive A4 layouts.
+3. **Advanced State UI**: Clean, animated Tailwind-backed interface utilizing Lucide icons for rich UX interactions.
+4. **JWT Flow Handling**: Secured token injection built natively into standard fetch utilities via Context API wrappers.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Requirements
 
-Currently, two official plugins are available:
+- **Node.js**: v18.0 or higher
+- **npm** or **yarn**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Environment Setup
 
-## React Compiler
+Create a `.env` file at the root of the `frontend` directory map:
+```env
+# Point this to your production API base URL or localhost proxy.
+VITE_API_BASE_URL=http://localhost:8000
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Development
 
-## Expanding the ESLint configuration
+Install the core dependencies:
+```bash
+npm install
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Start the Vite development engine map with Hot-Module-Replacement:
+```bash
+npm run dev
+```
+
+## Production Deployment
+
+This interface is an aggressively optimized static site and is ready to deploy natively to Edge/CDN networks like **Vercel**, **Netlify**, or **Cloudflare Pages**. 
+
+1. **Build the Application**:
+   ```bash
+   npm run build
+   ```
+   This compiles all React components into a single highly optimized static `dist/` directory, purging unneeded Tailwind CSS paths.
+
+2. **Serve Built Assets**:
+   You can serve the contents natively via NGINX or directly deploy the `dist/` folder.
+   To test locally beforehand:
+   ```bash
+   npm run preview
+   ```
+
+### Routing Considerations
+Because this is a Single Page Application (SPA) driven by `react-router-dom`, **catch-all rewrites** are required on the server architecture:
+- If deploying to **Vercel**, drop a `vercel.json` file in root specifying rewrite fallback.
+- If using **NGINX**, configure `try_files $uri $uri/ /index.html;` inside the root location block. Otherwise, refreshing on non-root URL links (like `/dashboard`) will trigger a `404 Not Found` error.
+
+## Advanced Styling Integrations
+- Font subsets: Google Fonts ('Caveat', 'Inter') are attached globally via `index.html`.
+- Editor UI handles custom paginated block logic across `data-a4-page` nodes dynamically reacting to markdown block dimensions.
+- Highlighting bindings implement clone break-boxes to ensure multiline strong text parses natively in raw Print APIs.

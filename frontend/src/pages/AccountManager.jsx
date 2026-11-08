@@ -953,7 +953,7 @@ export default function AccountManager() {
                                                 </li>
                                                 <li className="flex gap-2">
                                                     <span>📂</span>
-                                                    <span>All documents and uploads</span>
+                                                    <span>All generated notes</span>
                                                 </li>
                                                 <li className="flex gap-2">
                                                     <span>⭐</span>

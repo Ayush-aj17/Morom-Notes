@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Form, BackgroundTasks
 
 from sqlalchemy.orm import Session
 
@@ -40,10 +40,6 @@ async def generate_note(
 
     video_url: str = Form(None),
 
-    file: UploadFile = File(None),
-
-    pipeline: str = Form(default="audio-video"),
-
     db: Session = Depends(get_db),
 
     current_user: User = Depends(get_current_user)
@@ -78,72 +74,25 @@ async def generate_note(
 
 
 
-        if not video_url and not file:
-
-            raise HTTPException(status_code=400, detail="Must provide either a video_url or a video file.")
-
-        # Validate pipeline parameter
-        pipeline = pipeline.strip().lower() if pipeline else "audio-video"
-        if pipeline not in {"audio-only", "audio-video", "transcript-only"}:
-            raise HTTPException(status_code=400, detail="pipeline must be either 'audio-only', 'audio-video', or 'transcript-only'.")
+        if not video_url:
+            raise HTTPException(status_code=400, detail="A YouTube video_url is required.")
+        pipeline = "audio-video"
 
         if video_url:
 
             video_url = video_url.strip()
 
-            if not (video_url.startswith("http://") or video_url.startswith("https://")):
+            if not (
+                video_url.startswith(("http://www.youtube.com/", "https://www.youtube.com/",
+                                      "http://youtube.com/", "https://youtube.com/",
+                                      "http://youtu.be/", "https://youtu.be/"))
+            ):
 
-                raise HTTPException(status_code=400, detail="video_url must be an absolute HTTP/HTTPS URL.")
+                raise HTTPException(status_code=400, detail="video_url must be a valid YouTube link.")
 
 
 
         from core.config import settings as _settings
-
-        if file:
-
-            filename = os.path.basename(file.filename or "")
-
-            ext = os.path.splitext(filename)[1].lower()
-
-            if ext not in {".mp4", ".mov", ".mkv", ".avi"}:
-
-                logger.warning("Invalid file type: %s", ext)
-
-                raise HTTPException(status_code=400, detail=f"Invalid file type: {ext}. Allowed: .mp4, .mov, .mkv, .avi")
-
-
-
-            max_bytes = _settings.max_upload_size_mb * 1024 * 1024
-
-            try:
-
-                file.file.seek(0, os.SEEK_END)
-
-                size = file.file.tell()
-
-                file.file.seek(0)
-
-                logger.info("File size check: %d bytes, max: %d bytes", size, max_bytes)
-
-            except Exception as e:
-
-                logger.error("Failed to check file size: %s", e)
-
-                size = None
-
-            
-
-            if size is not None and size > max_bytes:
-
-                logger.warning("File too large: %d > %d", size, max_bytes)
-
-                raise HTTPException(
-
-                    status_code=413, 
-
-                    detail=f"Uploaded file is too large. Max: {_settings.max_upload_size_mb}MB"
-
-                )
 
 
 
@@ -443,57 +392,12 @@ async def generate_note(
 
         
 
-        if file:
-
-            try:
-
-                data = await file.read()
-
-                logger.info("Read file data: %d bytes", len(data) if data else 0)
-
-            except Exception as e:
-
-                logger.error("Failed to read file: %s", e)
-
-                n = db.get(Note, new_note.id)
-
-                if n:
-
-                    n.status = "failed"
-
-                    n.progress_status = f"Failed to read file: {str(e)}"
-
-                    db.commit()
-
-                raise HTTPException(status_code=400, detail=f"Failed to read uploaded file: {str(e)}")
-
-            
-
-            if _settings.testing:
-
-                _do_work(new_note.id, None, data, file.filename, file.content_type, pipeline)
-
-                logger.info("ran file-based generation immediately for note %s (testing mode)", new_note.id)
-
-            else:
-
-                background_tasks.add_task(_do_work, new_note.id, None, data, file.filename, file.content_type, pipeline)
-
-                logger.info("queued file-based note generation for note %s", new_note.id)
-
+        if _settings.testing:
+            _do_work(new_note.id, video_url, pipeline=pipeline)
+            logger.info("ran YouTube generation immediately for note %s (testing mode)", new_note.id)
         else:
-
-            if _settings.testing:
-
-                _do_work(new_note.id, video_url, pipeline=pipeline)
-
-                logger.info("ran URL-based generation immediately for note %s (testing mode)", new_note.id)
-
-            else:
-
-                background_tasks.add_task(_do_work, new_note.id, video_url, None, None, None, pipeline)
-
-                logger.info("queued URL-based note generation for note %s", new_note.id)
+            background_tasks.add_task(_do_work, new_note.id, video_url, None, None, None, pipeline)
+            logger.info("queued YouTube note generation for note %s", new_note.id)
 
 
 
@@ -884,6 +788,3 @@ async def check_cached_note(
             "message": "No cached notes for this video. Will be generated on next request."
 
         }
-
-
-

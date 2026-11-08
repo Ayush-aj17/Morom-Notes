@@ -178,10 +178,10 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ email })
       });
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to send reset link');
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || `Failed to send reset link (HTTP ${response.status})`);
       }
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       return { success: true, data };
     } catch (err) {
       throw err;
@@ -196,10 +196,10 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ email, otp, new_password: newPassword })
       });
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Password reset failed');
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || `Password reset failed (HTTP ${response.status})`);
       }
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       return { success: true, data };
     } catch (err) {
       throw err;

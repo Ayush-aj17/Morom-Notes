@@ -24,7 +24,8 @@ export const authFetch = async (path, options = {}) => {
                         path.includes('/auth/login') || 
                         path.includes('/auth/request-otp') ||
                         path.includes('/auth/verify-otp') ||
-                        path.includes('/auth/forgot-password');
+                        path.includes('/auth/forgot-password') ||
+                        path.includes('/auth/reset-password');
   
   console.log(`[authFetch] Is auth endpoint: ${isAuthEndpoint}`);
   
