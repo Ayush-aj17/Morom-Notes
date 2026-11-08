@@ -21,6 +21,11 @@ Create a `.env` file at the root of the `frontend` directory map:
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
+For Vercel, set `VITE_API_BASE_URL` to the public URL of the deployed FastAPI
+backend, for example `https://your-backend.onrender.com` (without a trailing
+slash), then redeploy the frontend. Requests such as `/auth/signup` and
+`/health` are sent to that backend.
+
 ## Development
 
 Install the core dependencies:

@@ -1,5 +1,5 @@
-// base URL for backend; configure using VITE_API_BASE_URL in .env.local for production
-export const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+// Set VITE_API_BASE_URL to the deployed FastAPI origin in Vercel.
+export const BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 
 /* ---------- Upload Lecture ---------- */
 export const authFetch = async (path, options = {}) => {
@@ -51,6 +51,11 @@ export const authFetch = async (path, options = {}) => {
     const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
     
     console.log(`[authFetch] Response status: ${res.status}`);
+    if (res.status === 404 && !BASE_URL) {
+      console.error(
+        '[authFetch] Backend URL is not configured. Set VITE_API_BASE_URL in the frontend deployment.'
+      );
+    }
     
     if (res.status === 401) {
       console.error(`[authFetch] ❌ 401 Unauthorized on ${path}`);
