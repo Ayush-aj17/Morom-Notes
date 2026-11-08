@@ -462,7 +462,7 @@ export default function EditorPage() {
           const lastOpened = JSON.parse(localStorage.getItem('noteLastOpened') || '{}');
           lastOpened[id] = Date.now();
           localStorage.setItem('noteLastOpened', JSON.stringify(lastOpened));
-        } catch (e) {
+        } catch {
           console.error("Failed to track last opened timestamp");
         }
       } catch (err) {
