@@ -1,5 +1,5 @@
 // base URL for backend; configure using VITE_API_BASE_URL in .env.local for production
-export const BASE_URL = "";
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 /* ---------- Upload Lecture ---------- */
 export const authFetch = async (path, options = {}) => {
