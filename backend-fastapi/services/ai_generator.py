@@ -402,6 +402,21 @@ def extract_video_id(url: str):
         return parsed.path[1:]
     return None
 
+def _youtube_extractor_args() -> dict:
+    """Return YouTube player clients used for public and mobile extraction."""
+    return {
+        'youtube': {
+            'player_client': ['android', 'web_safari', 'mweb'],
+        },
+    }
+
+def _youtube_cookie_options() -> dict:
+    """Return yt-dlp cookie options when an authenticated cookie file is configured."""
+    cookies_file = os.environ.get("YOUTUBE_COOKIES_FILE")
+    if cookies_file and os.path.isfile(cookies_file):
+        return {'cookiefile': cookies_file}
+    return {}
+
 def generate_notes_from_url(url: str, progress_callback=None, existing_video_path: str = None, pipeline: str = "transcript-only") -> tuple[str, str]:
     """Generate notes from YouTube captions, with media download as fallback."""
 
@@ -460,11 +475,10 @@ def generate_notes_from_url(url: str, progress_callback=None, existing_video_pat
             notes = generate_notes_from_transcript(transcript_text)
             return notes, None
         except Exception as e:
-            logging.exception("Failed to fetch YouTube transcript directly")
-            raise RuntimeError(
-                "Could not read captions for this YouTube video. "
-                "Please use a video with captions enabled and try again."
-            ) from e
+            logging.warning(
+                "YouTube captions unavailable; falling back to media extraction: %s",
+                e,
+            )
 
     if pipeline == "audio-only":
         # For audio-only, skip video download and use direct transcription
@@ -481,11 +495,8 @@ def generate_notes_from_url(url: str, progress_callback=None, existing_video_pat
             'quiet': True,
             'no_warnings': True,
             'nocheckcertificate': True,
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['android', 'web_safari'],
-                },
-            },
+            'extractor_args': _youtube_extractor_args(),
+            **_youtube_cookie_options(),
             'outtmpl': '%(id)s.%(ext)s',
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -579,11 +590,8 @@ def generate_notes_from_url(url: str, progress_callback=None, existing_video_pat
             'quiet': True,
             'no_warnings': True,
             'nocheckcertificate': True,
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['android', 'web_safari'],
-                },
-            },
+            'extractor_args': _youtube_extractor_args(),
+            **_youtube_cookie_options(),
             'progress_hooks': [ydl_hook]
         }
         logging.info(f"Downloading media via yt-dlp to {video_path}")
