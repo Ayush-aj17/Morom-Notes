@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from database.db import get_db
@@ -34,7 +35,7 @@ def get_current_user_from_token(token: str = Depends(oauth2_scheme), db: Session
     except JWTError:
         raise credentials_exception
     
-    user = db.query(User).filter(User.email == email).first()
+    user = find_user_by_email(db, email)
     if user is None:
         raise credentials_exception
     return user
@@ -98,8 +99,13 @@ class ForgotPasswordRequest(BaseModel):
     new_password: str
 
 def find_user_by_email(db: Session, email: str) -> Optional[User]:
-    """Find user by email"""
-    return db.query(User).filter(User.email == email).first()
+    """Find a user using the canonical form of an email address."""
+    normalized_email = email.strip().lower()
+    return (
+        db.query(User)
+        .filter(func.lower(func.trim(User.email)) == normalized_email)
+        .first()
+    )
 
 @router.post("/signup")
 def signup(user_data: UserCreate, db: Session = Depends(get_db)):
@@ -107,8 +113,10 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     Register a new user - Returns success only after OTP verification.
     Step 1: Create account and send OTP
     """
+    normalized_email = user_data.email.strip().lower()
+
     # Check if email already exists
-    existing_email = db.query(User).filter(User.email == user_data.email).first()
+    existing_email = find_user_by_email(db, normalized_email)
     if existing_email:
         if existing_email.email_verified:
             raise HTTPException(
@@ -130,7 +138,7 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     hashed_password = get_password_hash(user_data.password)
     new_user = User(
         username=user_data.username,
-        email=user_data.email,
+        email=normalized_email,
         hashed_password=hashed_password,
         email_verified=False  # Not verified until OTP is confirmed
     )
