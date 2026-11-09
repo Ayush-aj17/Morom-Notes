@@ -411,11 +411,40 @@ def _youtube_extractor_args() -> dict:
     }
 
 def _youtube_cookie_options() -> dict:
-    """Return yt-dlp cookie options when an authenticated cookie file is configured."""
+    """Return configured yt-dlp browser or file cookie options."""
+    browser = os.environ.get("YOUTUBE_COOKIES_FROM_BROWSER", "").strip()
+    if browser:
+        browser_parts = browser.split(":", 1)
+        browser_name = browser_parts[0].strip().lower()
+        profile = browser_parts[1].strip() if len(browser_parts) == 2 else None
+        supported_browsers = {
+            "brave", "chrome", "chromium", "edge", "firefox",
+            "opera", "safari", "vivaldi", "whale",
+        }
+        if browser_name not in supported_browsers:
+            raise RuntimeError(
+                "YOUTUBE_COOKIES_FROM_BROWSER must use a supported browser "
+                "(for example, chrome or chrome:Default)."
+            )
+        return {
+            "cookiesfrombrowser": (
+                browser_name,
+                profile,
+                None,
+                None,
+            ),
+        }
+
     cookies_file = os.environ.get("YOUTUBE_COOKIES_FILE")
     if cookies_file and os.path.isfile(cookies_file):
         return {'cookiefile': cookies_file}
     return {}
+
+def _youtube_download_options(base_options: dict) -> dict:
+    """Add configured cookies to yt-dlp options without logging cookie data."""
+    options = dict(base_options)
+    options.update(_youtube_cookie_options())
+    return options
 
 def generate_notes_from_url(url: str, progress_callback=None, existing_video_path: str = None, pipeline: str = "transcript-only") -> tuple[str, str]:
     """Generate notes from YouTube captions, with media download as fallback."""
@@ -490,15 +519,14 @@ def generate_notes_from_url(url: str, progress_callback=None, existing_video_pat
             raise RuntimeError(f"Failed to auto-install 'yt_dlp': {e}") from e
 
         # Use yt-dlp to extract audio URL or download audio only
-        ydl_opts = {
+        ydl_opts = _youtube_download_options({
             'format': 'bestaudio/best',
             'quiet': True,
             'no_warnings': True,
             'nocheckcertificate': True,
             'extractor_args': _youtube_extractor_args(),
-            **_youtube_cookie_options(),
             'outtmpl': '%(id)s.%(ext)s',
-        }
+        })
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             # Try to get direct audio URL
@@ -583,7 +611,7 @@ def generate_notes_from_url(url: str, progress_callback=None, existing_video_pat
                 progress_callback(mapped_progress, progress_text)
             elif d['status'] == 'finished' and progress_callback:
                 progress_callback(50, "Download complete. Processing video with AI...")
-        ydl_opts = {
+        ydl_opts = _youtube_download_options({
             'format': 'best[height<=720]/best',
             'outtmpl': video_path,
             'retries': 5,
@@ -591,9 +619,8 @@ def generate_notes_from_url(url: str, progress_callback=None, existing_video_pat
             'no_warnings': True,
             'nocheckcertificate': True,
             'extractor_args': _youtube_extractor_args(),
-            **_youtube_cookie_options(),
             'progress_hooks': [ydl_hook]
-        }
+        })
         logging.info(f"Downloading media via yt-dlp to {video_path}")
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
