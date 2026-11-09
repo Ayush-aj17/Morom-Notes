@@ -460,8 +460,11 @@ def generate_notes_from_url(url: str, progress_callback=None, existing_video_pat
             notes = generate_notes_from_transcript(transcript_text)
             return notes, None
         except Exception as e:
-            logging.error(f"Failed to fetch transcript directly: {e}")
-            logging.warning("YouTube transcript unavailable; falling back to media download: %s", e)
+            logging.exception("Failed to fetch YouTube transcript directly")
+            raise RuntimeError(
+                "Could not read captions for this YouTube video. "
+                "Please use a video with captions enabled and try again."
+            ) from e
 
     if pipeline == "audio-only":
         # For audio-only, skip video download and use direct transcription

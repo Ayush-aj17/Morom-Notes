@@ -75,6 +75,7 @@ except ValidationError as exc:
 
 if settings.testing and not settings.database_url.startswith("sqlite"):
     logging.warning(
-        "TESTING is enabled; using local SQLite instead of the configured remote database."
+        "TESTING is enabled while DATABASE_URL points to a remote database. "
+        "The configured DATABASE_URL will be used; use a test-specific DATABASE_URL "
+        "when running tests."
     )
-    settings.database_url = "sqlite:///./app.db"

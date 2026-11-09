@@ -164,11 +164,12 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     
     if not email_sent:
         logger.error("Signup OTP was not delivered to %s", new_user.email)
-        db.delete(new_user)
-        db.commit()
         raise HTTPException(
             status_code=503,
-            detail="We could not send the verification email. Check the Resend settings and try again.",
+            detail=(
+                "Account was saved, but we could not send the verification email. "
+                "Configure RESEND_API_KEY and try again."
+            ),
         )
 
     logger.info("Signup OTP accepted by Resend for %s", new_user.email)
