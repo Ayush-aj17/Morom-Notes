@@ -5,6 +5,8 @@ import urllib.parse
 import logging
 import subprocess
 import sys
+import base64
+import hashlib
 
 def _ensure_package(package_name: str, import_name: str = None, progress_callback=None):
     """Dynamically installs missing pip packages at runtime."""
@@ -438,6 +440,35 @@ def _youtube_cookie_options() -> dict:
     cookies_file = os.environ.get("YOUTUBE_COOKIES_FILE")
     if cookies_file and os.path.isfile(cookies_file):
         return {'cookiefile': cookies_file}
+
+    encoded_cookies = os.environ.get("YOUTUBE_COOKIES_BASE64", "").strip()
+    if encoded_cookies:
+        try:
+            cookie_bytes = base64.b64decode(encoded_cookies, validate=True)
+        except Exception as exc:
+            raise RuntimeError(
+                "YOUTUBE_COOKIES_BASE64 is not valid base64."
+            ) from exc
+
+        if not cookie_bytes.startswith(
+            (b"# HTTP Cookie File", b"# Netscape HTTP Cookie File")
+        ):
+            raise RuntimeError(
+                "YOUTUBE_COOKIES_BASE64 must contain a Netscape-format cookies file."
+            )
+
+        cookie_dir = os.path.join(tempfile.gettempdir(), "morom-notes")
+        os.makedirs(cookie_dir, mode=0o700, exist_ok=True)
+        cookie_path = os.path.join(
+            cookie_dir,
+            f"youtube-cookies-{hashlib.sha256(cookie_bytes).hexdigest()[:16]}.txt",
+        )
+        if not os.path.exists(cookie_path):
+            with open(cookie_path, "wb") as cookie_file:
+                cookie_file.write(cookie_bytes)
+            os.chmod(cookie_path, 0o600)
+        return {'cookiefile': cookie_path}
+
     return {}
 
 def _youtube_download_options(base_options: dict) -> dict:
@@ -471,31 +502,45 @@ def generate_notes_from_url(url: str, progress_callback=None, existing_video_pat
             if not video_id:
                 raise ValueError("Could not extract video ID from YouTube URL.")
                 
-            import requests
-            session = requests.Session()
-            session.verify = False  # Ignore SSL errors which block direct requests from Python
-            
-            api = YouTubeTranscriptApi(http_client=session)
-            
             # Prefer English, but use the video's first available caption track when
             # English is unavailable. The note-generation prompt translates captions
             # into English, so requiring English here needlessly triggers a blocked
             # yt-dlp media-download fallback for videos such as Hindi lectures.
-            available_transcripts = api.list(video_id)
-            try:
-                transcript = available_transcripts.find_transcript(['en'])
-            except Exception:
-                transcript = next(iter(available_transcripts), None)
+            import requests
+            transcript_list = None
+            transcript_error = None
+            clients = [None]
+            insecure_session = requests.Session()
+            insecure_session.verify = False
+            clients.append(insecure_session)
 
-            if transcript is None:
-                raise ValueError("This YouTube video has no available transcript.")
+            for http_client in clients:
+                try:
+                    api = (
+                        YouTubeTranscriptApi()
+                        if http_client is None
+                        else YouTubeTranscriptApi(http_client=http_client)
+                    )
+                    available_transcripts = api.list(video_id)
+                    try:
+                        transcript = available_transcripts.find_transcript(['en'])
+                    except Exception:
+                        transcript = next(iter(available_transcripts), None)
+                    if transcript is None:
+                        raise ValueError("This YouTube video has no available transcript.")
+                    logging.info(
+                        "Using YouTube transcript language %s%s",
+                        transcript.language_code,
+                        " (auto-generated)" if transcript.is_generated else "",
+                    )
+                    transcript_list = transcript.fetch()
+                    break
+                except Exception as exc:
+                    transcript_error = exc
+                    logging.warning("YouTube transcript attempt failed: %s", exc)
 
-            logging.info(
-                "Using YouTube transcript language %s%s",
-                transcript.language_code,
-                " (auto-generated)" if transcript.is_generated else "",
-            )
-            transcript_list = transcript.fetch()
+            if transcript_list is None:
+                raise RuntimeError("YouTube transcript retrieval failed.") from transcript_error
             transcript_text = " ".join([t.text if hasattr(t, 'text') else t.get('text', '') for t in transcript_list])
             
             if progress_callback:
