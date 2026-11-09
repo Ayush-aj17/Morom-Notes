@@ -433,8 +433,25 @@ def generate_notes_from_url(url: str, progress_callback=None, existing_video_pat
             
             api = YouTubeTranscriptApi(http_client=session)
             
-            # Fetch the transcript explicitly seeking "en" to prevent failures with formatting issues
-            transcript_list = api.list(video_id).find_transcript(['en']).fetch()
+            # Prefer English, but use the video's first available caption track when
+            # English is unavailable. The note-generation prompt translates captions
+            # into English, so requiring English here needlessly triggers a blocked
+            # yt-dlp media-download fallback for videos such as Hindi lectures.
+            available_transcripts = api.list(video_id)
+            try:
+                transcript = available_transcripts.find_transcript(['en'])
+            except Exception:
+                transcript = next(iter(available_transcripts), None)
+
+            if transcript is None:
+                raise ValueError("This YouTube video has no available transcript.")
+
+            logging.info(
+                "Using YouTube transcript language %s%s",
+                transcript.language_code,
+                " (auto-generated)" if transcript.is_generated else "",
+            )
+            transcript_list = transcript.fetch()
             transcript_text = " ".join([t.text if hasattr(t, 'text') else t.get('text', '') for t in transcript_list])
             
             if progress_callback:
