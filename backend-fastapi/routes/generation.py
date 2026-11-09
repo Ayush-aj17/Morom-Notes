@@ -76,7 +76,9 @@ async def generate_note(
 
         if not video_url:
             raise HTTPException(status_code=400, detail="A YouTube video_url is required.")
-        pipeline = "audio-video"
+        # Prefer YouTube captions for the YouTube-only flow. This avoids
+        # unnecessary video downloads that YouTube may block as bot traffic.
+        pipeline = "transcript-only"
 
         if video_url:
 

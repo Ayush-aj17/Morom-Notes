@@ -402,8 +402,8 @@ def extract_video_id(url: str):
         return parsed.path[1:]
     return None
 
-def generate_notes_from_url(url: str, progress_callback=None, existing_video_path: str = None, pipeline: str = "audio-video") -> tuple[str, str]:
-    """Pass the YouTube URL directly to Gemini by downloading the video first."""
+def generate_notes_from_url(url: str, progress_callback=None, existing_video_path: str = None, pipeline: str = "transcript-only") -> tuple[str, str]:
+    """Generate notes from YouTube captions, with media download as fallback."""
 
     if pipeline == "transcript-only":
         logging.info("Transcript-only pipeline: fetching YouTube transcript directly.")
@@ -444,7 +444,7 @@ def generate_notes_from_url(url: str, progress_callback=None, existing_video_pat
             return notes, None
         except Exception as e:
             logging.error(f"Failed to fetch transcript directly: {e}")
-            raise RuntimeError(f"Could not fetch transcript directly. Try Audio-only mode. Error: {e}")
+            logging.warning("YouTube transcript unavailable; falling back to media download: %s", e)
 
     if pipeline == "audio-only":
         # For audio-only, skip video download and use direct transcription
@@ -461,6 +461,11 @@ def generate_notes_from_url(url: str, progress_callback=None, existing_video_pat
             'quiet': True,
             'no_warnings': True,
             'nocheckcertificate': True,
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web_safari'],
+                },
+            },
             'outtmpl': '%(id)s.%(ext)s',
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -548,12 +553,17 @@ def generate_notes_from_url(url: str, progress_callback=None, existing_video_pat
             elif d['status'] == 'finished' and progress_callback:
                 progress_callback(50, "Download complete. Processing video with AI...")
         ydl_opts = {
-            'format': 'best[height<=720]',
+            'format': 'best[height<=720]/best',
             'outtmpl': video_path,
             'retries': 5,
             'quiet': True,
             'no_warnings': True,
             'nocheckcertificate': True,
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web_safari'],
+                },
+            },
             'progress_hooks': [ydl_hook]
         }
         logging.info(f"Downloading media via yt-dlp to {video_path}")
